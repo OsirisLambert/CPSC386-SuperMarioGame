@@ -1,3 +1,4 @@
 # SuperMarioGame
 
-Author:   Lambert Liu
+Author:   Grae Lessley
+          Lambert Liu
