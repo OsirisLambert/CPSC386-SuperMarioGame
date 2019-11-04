@@ -7,5 +7,5 @@ Author:
 --Lambert Liu
 
 
-#How to run?
+# How to run?
 python SuperMario.py
