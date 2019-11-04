@@ -595,11 +595,6 @@ class SuperMario:
     def mainLoop(self):
         self.initGame()
         while True:
-            if self.level == '1-1':
-                pass
-            elif self.level == '1-2':
-                self.world = World.World(1, 2, 1400)
-
             if self.tock_index > 4:
                 if self.lowerTime:
                     self.gameTimer_tock -= 1
