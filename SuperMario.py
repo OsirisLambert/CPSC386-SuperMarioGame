@@ -18,6 +18,7 @@ class SuperMario:
         self.gameTime = 400
 
     def initGame(self):
+
         mixer.init()
         self.SOUNDS = {}
         for sound_name in ['smb_breakblock', 'smb_bump', 'smb_coin', 'smb_fireball',
@@ -148,13 +149,14 @@ class SuperMario:
         self.player = Mario.Mario(player_xpos, player_ypos, state)
         self.playerGroup.add(self.player)
         self.world.kill()
-        self.world = World.World(1, 1, 1400)
+        if self.level == '1-1':
+            self.world = World.World(1, 1, 1400)
+        elif self.level == '1-2':
+            self.world = World.World(1, 2, 1400)
         if self.level == '1-1':
             WORLD_MAP.world1_1(game)
-            mixer.music.play(-1)
         elif self.level == '1-2':
             WORLD_MAP.world1_2(game)
-            mixer.music.play(-1)
         self.newLifeHandle = False
         self.gameTimer_tock = 400
 
@@ -367,12 +369,16 @@ class SuperMario:
             self.levelTransition = False
             self.slideController = False
             if self.level == '1-1':
+                # level transition. killall will make a new world, mario's state will be carried over.
+                # set his new coords here
+                #start the mixer playing the corresponding oog here. i couldnt find it in time, this is up to you to get
                 self.level = '1-2'
+                mixer.music.load('Sounds/Underground.wav')
+                mixer.music.play(-1)
                 self.player_xpos = self.player_xpos
                 self.player_ypos = self.player_ypos
             self.Kill_All(self.player_xpos, self.player_ypos)
-
-
+            self.lowerTime = True
 
     def checkCollisions(self, currentTime):
         collision = False
@@ -394,6 +400,7 @@ class SuperMario:
         flagpole_collisions = sprite.groupcollide(self.playerGroup, self.flagPoles, False, False)
         if not self.player.movementLock:
             if flagpole_collisions:
+                self.SOUNDS['smb_stage_clear'].play()
                 self.lowerTime = False
                 self.player.Sliding = True
                 self.slideController = True
@@ -579,7 +586,7 @@ class SuperMario:
                                             400, 25))
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, 'WORLD', (255, 255, 255),
                                             600, 5))
-        self.steadyText.add(Text.steadyText(Settings.FONT, 20, self.level, (255, 255, 255),
+        self.steadyText.add(Text.steadyText(Settings.FONT, 20, str(self.level), (255, 255, 255),
                                             620, 25))
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, 'COINS', (255, 255, 255),
                                             800, 5))
@@ -591,10 +598,12 @@ class SuperMario:
                                             1027, 25))
         self.steadyText.update()
 
-
     def mainLoop(self):
         self.initGame()
         while True:
+            currentTicks = time.get_ticks()
+            if self.player.rect.top > Settings.SCREEN_HEIGHT:
+                self.handleDeath(currentTicks)
             if self.tock_index > 4:
                 if self.lowerTime:
                     self.gameTimer_tock -= 1
@@ -605,7 +614,6 @@ class SuperMario:
                         self.warningPlayed = True
             else:
                 self.tock_index += 1
-            currentTicks = time.get_ticks()
             if self.gameTimer_tock <= 0 and self.lowerTime:
                 self.SOUNDS['smb_mariodie'].play()
                 self.handleDeath(currentTicks)

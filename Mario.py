@@ -398,7 +398,7 @@ class Mario(Sprite):
                 self.dethklok = 0
             if self.rect.top >= Settings.SCREEN_HEIGHT + 10:
                 waiter = time.get_ticks()
-                end = waiter + 150
+                end = waiter + 1200
                 while waiter < end:
                     waiter = time.get_ticks()
                 return True
@@ -417,9 +417,6 @@ class Mario(Sprite):
                     Settings.MARIO_BIG_IMAGES['9']
                 pos = self.rect.bottomleft
                 self.rect = self.image.get_rect(bottomleft=pos)
-
-
-
 
     def update(self, currentTime, doesMove = True):
         if self.isAlive:
