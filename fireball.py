@@ -29,6 +29,9 @@ class fireball(Sprite):
         else:
             self.rect.y += 7
 
+
+
+
     def explode(self):
         if self.counter > 4:
             self.image = Settings.IMAGES['194']

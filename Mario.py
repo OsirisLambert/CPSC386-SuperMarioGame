@@ -44,6 +44,7 @@ class Mario(Sprite):
         self.dethklok = 0
         self.deth_apex = False
         self.start_deth = True
+        self.Sliding = False
 
     #this function is REDICULOUSLY HUGE. it's my shame i didnt do it in loops
     def changeMarioState(self, direction = 'loop'):
@@ -397,7 +398,7 @@ class Mario(Sprite):
                 self.dethklok = 0
             if self.rect.top >= Settings.SCREEN_HEIGHT + 10:
                 waiter = time.get_ticks()
-                end = waiter + 1800
+                end = waiter + 150
                 while waiter < end:
                     waiter = time.get_ticks()
                 return True
@@ -418,6 +419,8 @@ class Mario(Sprite):
                 self.rect = self.image.get_rect(bottomleft=pos)
 
 
+
+
     def update(self, currentTime, doesMove = True):
         if self.isAlive:
             if not self.movementLock:
@@ -428,7 +431,8 @@ class Mario(Sprite):
                 self.Fall()
                 self.Crouch()
             else:
-                self.changeMarioState()
+                if not self.Sliding:
+                    self.changeMarioState()
         else:
             if currentTime - self.moveTimer > self.moveTime:
                 self.moveTimer += self.moveTime

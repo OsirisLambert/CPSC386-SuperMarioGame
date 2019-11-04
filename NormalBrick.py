@@ -4,7 +4,7 @@ from pygame.sprite import Sprite
 import unmoveable_item
 
 class NormalBrick(Sprite):
-    def __init__(self, xpos, ypos):
+    def __init__(self, xpos, ypos, *args):
         Sprite.__init__(self)
         self.image = transform.scale(Settings.IMAGES['0'], (40, 40))
         self.rect = self.image.get_rect(topleft=(xpos, ypos))

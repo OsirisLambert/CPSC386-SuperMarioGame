@@ -18,13 +18,12 @@ class SuperMario:
         self.gameTime = 400
 
     def initGame(self):
-
         mixer.init()
         self.SOUNDS = {}
         for sound_name in ['smb_breakblock', 'smb_bump', 'smb_coin', 'smb_fireball',
                            'smb_jump-small', 'smb_jump-super', 'smb_kick', 'smb_mariodie',
                            'smb_pipe', 'smb_powerup', 'smb_powerup_appears', 'smb_stomp',
-                           'smb_warning', 'smb_gameover']:
+                           'smb_warning', 'smb_gameover', 'smb_stage_clear']:
             self.SOUNDS[sound_name] = mixer.Sound(Settings.SOUND_PATH + '{}.wav'.format(sound_name))
             self.SOUNDS[sound_name].set_volume(0.2)
         mixer.music.load('music.ogg')
@@ -34,6 +33,14 @@ class SuperMario:
         self.player_ypos = 480
         self.gameTimer_tock = 400
         self.tock_index = 0
+        self.lowerTime = True
+
+        self.level = '1-1'
+
+        self.slideController = False
+        self.playSlideSound = False
+        self.levelTransition = False
+        self.playedlevelTransition = False
 
         self.warningPlayed = False
 
@@ -58,6 +65,7 @@ class SuperMario:
         self.move_steps = sprite.Group()
         self.long_pipes = sprite.Group()
         self.flags = sprite.Group()
+        self.flagPoles = sprite.Group()
         self.castles = sprite.Group()
 
         self.instruction_board = sprite.Group()
@@ -106,12 +114,23 @@ class SuperMario:
             for fireball in self.fireballs:
                 self.screen.blit(fireball.image, fireball.rect)
         self.Kill_All(self.player_xpos, self.player_ypos, '1-1')
+        if self.lives < 0:
+            self.SOUNDS['smb_gameover'].play()
+            self.lives = 3
+            self.score = 0
+            waiter = time.get_ticks()
+            end = waiter + 4100
+            while waiter < end:
+                waiter = time.get_ticks()
         mixer.music.set_pos(0)
         mixer.music.unpause()
 
 
-    def Kill_All(self, player_xpos, player_ypos, level):
+    def Kill_All(self, player_xpos, player_ypos, *args):
         self.lives -= 1
+        state = 'Mini'
+        if self.player.rect.top < Settings.SCREEN_HEIGHT:
+            state = self.player.state
         for block in self.blocks:
             block.kill()
         for item in self.itemGroup:
@@ -126,12 +145,16 @@ class SuperMario:
             fireball.kill()
         for item in self.unmove_items:
             item.kill()
-        self.player = Mario.Mario(player_xpos, player_ypos)
+        self.player = Mario.Mario(player_xpos, player_ypos, state)
         self.playerGroup.add(self.player)
         self.world.kill()
         self.world = World.World(1, 1, 1400)
-        if level == '1-1':
+        if self.level == '1-1':
             WORLD_MAP.world1_1(game)
+            mixer.music.play(-1)
+        elif self.level == '1-2':
+            WORLD_MAP.world1_2(game)
+            mixer.music.play(-1)
         self.newLifeHandle = False
         self.gameTimer_tock = 400
 
@@ -142,6 +165,8 @@ class SuperMario:
                 if e.type == KEYDOWN:
                     if e.key == K_SPACE:
                         self.spaceDown = True
+                    elif e.key == K_ESCAPE:
+                        sys.exit()
                 if e.type == KEYUP:
                     if e.key == K_SPACE:
                         self.spaceDown = False
@@ -231,7 +256,9 @@ class SuperMario:
                     for item in self.unmove_items:
                         item.rect.x -= Settings.MARIO_RUN_SPEED
                     for fireball in self.fireballs:
-                        fireball.rect.x -= 6
+                        fireball.rect.x -= 4
+                    for text in self.textGroup:
+                        text.rect.x -= Settings.MARIO_RUN_SPEED
             if self.player.direction == 1:
                 self.world.stagePosX -= velocity
             elif self.player.direction == -1:
@@ -256,8 +283,8 @@ class SuperMario:
     def check_Terrain(self, mario, collision):
         boot = False
         if mario.rect.bottom in (collision.rect.top + index for index in range(0, Settings.MARIO_FALL_SPEED + 3)):
-            if mario.rect.right not in range(collision.rect.left - 15, collision.rect.left + 7) \
-                    and mario.rect.left not in range(collision.rect.right - 7, collision.rect.right + 15):
+            if not ((mario.rect.right > collision.rect.left - 20) and (mario.rect.right < collision.rect.left + 20) \
+                    or (mario.rect.left < collision.rect.right + 20) and (mario.rect.left > collision.rect.right - 20)):
                 if not mario.isReachedApex:
                     if mario.rect.bottom < mario.lastGroundYPos and mario.isJumping:
                         mario.isJumping = False
@@ -310,18 +337,68 @@ class SuperMario:
                     mario.velocity = 0
                     mario.runRight = False
 
+    def Slide(self):
+        collisions = sprite.groupcollide(self.playerGroup, self.flagPoles, False, False)
+        for flagpole in self.flagPoles:
+                if self.player.rect.bottom >= flagpole.rect.bottom:
+                    self.slideController = False
+                    self.levelTransition = True
+                    if not self.playedlevelTransition:
+                        self.SOUNDS['smb_stage_clear'].play()
+                        self.playedlevelTransition = True
+        self.player.image = Settings.MARIO_FIRE_IMAGES['22'] if self.player.state == 'Fire' else \
+                    Settings.MARIO_BIG_IMAGES['22'] if self.player.state == 'Big' else \
+                        Settings.MARIO_MINI_IMAGES['20']
+        pos = self.player.rect.bottomleft
+        self.player.rect = self.player.image.get_rect(bottomleft=pos)
+        if self.slideController:
+            self.player.rect.y += 4
+            for flag in self.flags:
+                flag.rect.y = self.player.rect.top - 10
+            self.gameTimer_tock -= 1
+            self.score += 100
+            self.SOUNDS['smb_coin'].play()
+        else:
+            self.SOUNDS['smb_coin'].play()
+            self.score += 100
+            self.gameTimer_tock -= 1
+        if self.levelTransition and self.gameTimer_tock <= 0:
+            self.player.Sliding = False
+            self.levelTransition = False
+            self.slideController = False
+            if self.level == '1-1':
+                self.level = '1-2'
+                self.player_xpos = self.player_xpos
+                self.player_ypos = self.player_ypos
+            self.Kill_All(self.player_xpos, self.player_ypos)
+
+
 
     def checkCollisions(self, currentTime):
+        collision = False
+        grow_collision = False
+        enemy_collision = False
         if not self.player.movementLock:
             collision = sprite.groupcollide(self.playerGroup, self.blocks, False, False)
             grow_collision = sprite.groupcollide(self.playerGroup, self.itemGroup, False, False)
             enemy_collision = sprite.groupcollide(self.playerGroup, self.enemies, False, False)
+            if self.levelTransition:
+                self.transition()
+        if self.player.Sliding:
+            self.Slide()
         item_collison = sprite.groupcollide(self.itemGroup, self.blocks, False, False)
         fireball_world_collision = sprite.groupcollide(self.fireballs, self.blocks, False, False)
         fireball_enemy_collision = sprite.groupcollide(self.fireballs, self.enemies, False, False)
         enemy_world_collison = sprite.groupcollide(self.enemies, self.blocks, False, False)
         enemy_enemy_collison = sprite.groupcollide(self.goombas, self.koopas, False, False)
+        flagpole_collisions = sprite.groupcollide(self.playerGroup, self.flagPoles, False, False)
         if not self.player.movementLock:
+            if flagpole_collisions:
+                self.lowerTime = False
+                self.player.Sliding = True
+                self.slideController = True
+                self.player.movementLock = True
+                mixer.music.pause()
             if collision:
                 for mario, block in collision.items():
                     for collision in block:
@@ -371,11 +448,13 @@ class SuperMario:
                                         enemy.Spin(mario.direction)
                                         mario.isJumping = True
                                         mario.jump_height = 1
+                                        mario.jumpCounter = 0
                                         mario.isReachedApex = False
                                 if enemy in self.goombas:
                                     self.SOUNDS['smb_stomp'].play()
                                     mario.isJumping = True
                                     mario.jump_height = 1
+                                    mario.jumpCounter = 0
                                     mario.isReachedApex = False
                                     enemy.is_alive = False
                                     text = Text.Text(Settings.FONT, 20, '200', (255, 255, 255), enemy.rect.x,
@@ -389,6 +468,7 @@ class SuperMario:
                                         enemy.Spin(mario.direction)
                                     else:
                                         if mario.state != 'Mini':
+                                            self.SOUNDS['smb_pipe'].play()
                                             mario.changeMarioState('Damage')
                                         else:
                                             self.handleDeath(currentTime)
@@ -410,6 +490,7 @@ class SuperMario:
                             score = 200 + (0 if koopa.enemies_hit == 0 else 100 if koopa.enemies_hit == 1
                                            else 300 if koopa.enemies_hit == 2 else 600 if koopa.enemies_hit == 3
                                            else 800)
+                            koopa.enemies_hit += 1
                             text = Text.Text(Settings.FONT, 20, str(score), (255, 255, 255), goomba.rect.x,
                                              goomba.rect.y - 5)
                             self.textGroup.add(text)
@@ -482,21 +563,23 @@ class SuperMario:
                         if enemy.rect.bottom not in range(block.rect.top - 2, block.rect.top + 2):
                             enemy.hitWall = True
 
+        if self.player.rect.y > 672:
+            self.handleDeath(currentTime)
 
     def draw_UI(self):
         for text in self.steadyText:
             text.kill()
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, 'SCORE', (255, 255, 255),
-                               200, 5))
+                               175, 5))
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, str(self.score), (255, 255, 255),
-                               200, 25))
+                               175, 25))
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, 'TIME', (255, 255, 255),
                                             400, 5))
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, str(self.gameTimer_tock), (255, 255, 255),
                                             400, 25))
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, 'WORLD', (255, 255, 255),
                                             600, 5))
-        self.steadyText.add(Text.steadyText(Settings.FONT, 20, '1-1', (255, 255, 255),
+        self.steadyText.add(Text.steadyText(Settings.FONT, 20, self.level, (255, 255, 255),
                                             620, 25))
         self.steadyText.add(Text.steadyText(Settings.FONT, 20, 'COINS', (255, 255, 255),
                                             800, 5))
@@ -508,24 +591,27 @@ class SuperMario:
                                             1027, 25))
         self.steadyText.update()
 
+
     def mainLoop(self):
         self.initGame()
         while True:
+            if self.level == '1-1':
+                pass
+            elif self.level == '1-2':
+                self.world = World.World(1, 2, 1400)
+
             if self.tock_index > 4:
-                self.gameTimer_tock -= 1
+                if self.lowerTime:
+                    self.gameTimer_tock -= 1
                 self.tock_index = 0
-                if self.gameTimer_tock < 100:
+                if self.gameTimer_tock < 100 and self.lowerTime:
                     if not self.warningPlayed:
                         self.SOUNDS['smb_warning'].play()
                         self.warningPlayed = True
             else:
                 self.tock_index += 1
             currentTicks = time.get_ticks()
-            if self.lives < 0:
-                self.SOUNDS['smb_gameover'].play()
-                self.lives = 3
-                self.score = 0
-            if self.gameTimer_tock <= 0:
+            if self.gameTimer_tock <= 0 and self.lowerTime:
                 self.SOUNDS['smb_mariodie'].play()
                 self.handleDeath(currentTicks)
             if not self.player.movementLock:

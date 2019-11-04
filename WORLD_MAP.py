@@ -21,9 +21,19 @@ class world1_1():
         SuperMario.goombas.add(goomba.Goomba(4200, 560, 1))
         SuperMario.goombas.add(goomba.Goomba(4260, 560, 1))
         SuperMario.goombas.add(goomba.Goomba(4320, 560, 1))
-        SuperMario.goombas.add(goomba.Goomba(4390, 560, 1))
+        SuperMario.goombas.add(goomba.Goomba(5200, 560, -1))
+        SuperMario.goombas.add(goomba.Goomba(5250, 560, -1))
+        SuperMario.goombas.add(goomba.Goomba(5500, 560, -1))
+        SuperMario.goombas.add(goomba.Goomba(5550, 560, -1))
+        SuperMario.goombas.add(goomba.Goomba(5600, 560, -1))
+        SuperMario.goombas.add(goomba.Goomba(5650, 560, -1))
+        SuperMario.goombas.add(goomba.Goomba(7000, 507, 1))
+        SuperMario.goombas.add(goomba.Goomba(7700, 507, -1))
+        SuperMario.goombas.add(goomba.Goomba(8160, 200, -1))
+
 
         SuperMario.koopas.add(Koopa.Koopa(600, 560, 1))
+        SuperMario.koopas.add(Koopa.Koopa(4390, 560, 1))
 
         SuperMario.QuestionBlocks.add(QuestionBrick.QuestionBrick(771, 408))
         SuperMario.QuestionBlocks.add(QuestionBrick.QuestionBrick(1000, 408, 1))
@@ -128,7 +138,7 @@ class world1_1():
         for index in range(6615, 30519, 40):
             SuperMario.groundBlocks.add(GroundBrick.GroundBrick(index, 600))
 
-        SuperMario.flags.add(Flag.Flagpole(8720, 200))
+        SuperMario.flagPoles.add(Flag.Flagpole(8720, 200))
         SuperMario.flags.add(Flag.Flag(8680, 210))
 
         SuperMario.instruction_board.add(unmoveable_item.Instruction_board(50,100))
@@ -148,7 +158,8 @@ class world1_1():
         SuperMario.unmove_items.add(SuperMario.brushes, SuperMario.clouds, SuperMario.mountains, SuperMario.instruction_board)
         SuperMario.enemies.add(SuperMario.goombas, SuperMario.koopas)
         SuperMario.blocks.add(SuperMario.QuestionBlocks, SuperMario.flags, SuperMario.castles, SuperMario.groundBlocks,
-                              SuperMario.groundUpBlocks, SuperMario.normalPipes, SuperMario.normalBlocks)
+                              SuperMario.groundUpBlocks, SuperMario.normalPipes, SuperMario.normalBlocks,
+                              SuperMario.flagPoles)
 
 
 class world1_2():
